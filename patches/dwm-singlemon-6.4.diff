@@ -1,0 +1,112 @@
+diff --color -u a/config.def.h b/config.def.h
+--- a/config.def.h	2022-10-04 18:38:18.000000000 +0100
++++ b/config.def.h	2023-09-08 17:18:56.243313384 +0100
+@@ -80,10 +80,6 @@
+ 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
+ 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+ 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+-	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
+-	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
+-	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
+-	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+ 	TAGKEYS(                        XK_1,                      0)
+ 	TAGKEYS(                        XK_2,                      1)
+ 	TAGKEYS(                        XK_3,                      2)
+diff --color -u a/config.mk b/config.mk
+--- a/config.mk	2022-10-04 18:38:18.000000000 +0100
++++ b/config.mk	2023-09-08 17:19:05.376646446 +0100
+@@ -10,10 +10,6 @@
+ X11INC = /usr/X11R6/include
+ X11LIB = /usr/X11R6/lib
+
+-# Xinerama, comment if you don't want it
+-XINERAMALIBS  = -lXinerama
+-XINERAMAFLAGS = -DXINERAMA
+-
+ # freetype
+ FREETYPELIBS = -lfontconfig -lXft
+ FREETYPEINC = /usr/include/freetype2
+diff --color -u a/dwm.c b/dwm.c
+--- a/dwm.c	2022-10-04 18:38:18.000000000 +0100
++++ b/dwm.c	2023-09-08 17:18:41.476647146 +0100
+@@ -160,14 +160,12 @@
+ static void destroynotify(XEvent *e);
+ static void detach(Client *c);
+ static void detachstack(Client *c);
+-static Monitor *dirtomon(int dir);
+ static void drawbar(Monitor *m);
+ static void drawbars(void);
+ static void enternotify(XEvent *e);
+ static void expose(XEvent *e);
+ static void focus(Client *c);
+ static void focusin(XEvent *e);
+-static void focusmon(const Arg *arg);
+ static void focusstack(const Arg *arg);
+ static Atom getatomprop(Client *c, Atom prop);
+ static int getrootptr(int *x, int *y);
+@@ -208,7 +206,6 @@
+ static void sigchld(int unused);
+ static void spawn(const Arg *arg);
+ static void tag(const Arg *arg);
+-static void tagmon(const Arg *arg);
+ static void tile(Monitor *m);
+ static void togglebar(const Arg *arg);
+ static void togglefloating(const Arg *arg);
+@@ -681,21 +678,6 @@
+ 	}
+ }
+
+-Monitor *
+-dirtomon(int dir)
+-{
+-	Monitor *m = NULL;
+-
+-	if (dir > 0) {
+-		if (!(m = selmon->next))
+-			m = mons;
+-	} else if (selmon == mons)
+-		for (m = mons; m->next; m = m->next);
+-	else
+-		for (m = mons; m->next != selmon; m = m->next);
+-	return m;
+-}
+-
+ void
+ drawbar(Monitor *m)
+ {
+@@ -823,20 +805,6 @@
+ }
+
+ void
+-focusmon(const Arg *arg)
+-{
+-	Monitor *m;
+-
+-	if (!mons->next)
+-		return;
+-	if ((m = dirtomon(arg->i)) == selmon)
+-		return;
+-	unfocus(selmon->sel, 0);
+-	selmon = m;
+-	focus(NULL);
+-}
+-
+-void
+ focusstack(const Arg *arg)
+ {
+ 	Client *c = NULL, *i;
+@@ -1659,14 +1627,6 @@
+ }
+
+ void
+-tagmon(const Arg *arg)
+-{
+-	if (!selmon->sel || !mons->next)
+-		return;
+-	sendmon(selmon->sel, dirtomon(arg->i));
+-}
+-
+-void
+ tile(Monitor *m)
+ {
+ 	unsigned int i, n, h, mw, my, ty;

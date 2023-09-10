@@ -1,11 +1,11 @@
---- dwm-6.4_backup/Makefile	2023-09-09 14:56:03.279039186 +0100
-+++ dwm-6.4/Makefile	2023-09-09 14:56:39.462372637 +0100
+--- a/Makefile	2023-09-09 14:56:03.279039186 +0100
++++ b/Makefile	2023-09-09 14:56:39.462372637 +0100
 @@ -26,7 +26,7 @@
  	${CC} -o $@ ${OBJ} ${LDFLAGS}
- 
+
  clean:
 -	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz
 +	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz config.h *.orig *.rej
- 
+
  dist: clean
  	mkdir -p dwm-${VERSION}

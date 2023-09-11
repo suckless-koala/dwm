@@ -1,6 +1,6 @@
 diff --color -u a/config.def.h b/config.def.h
 --- a/config.def.h	2022-10-04 18:38:18.000000000 +0100
-+++ b/config.def.h	2023-09-08 17:18:56.243313384 +0100
++++ b/config.def.h	2023-09-11 13:13:37.935848657 +0100
 @@ -80,10 +80,6 @@
  	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
  	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
@@ -14,7 +14,7 @@ diff --color -u a/config.def.h b/config.def.h
  	TAGKEYS(                        XK_3,                      2)
 diff --color -u a/config.mk b/config.mk
 --- a/config.mk	2022-10-04 18:38:18.000000000 +0100
-+++ b/config.mk	2023-09-08 17:19:05.376646446 +0100
++++ b/config.mk	2023-09-11 13:13:44.519400199 +0100
 @@ -10,10 +10,6 @@
  X11INC = /usr/X11R6/include
  X11LIB = /usr/X11R6/lib
@@ -28,8 +28,18 @@ diff --color -u a/config.mk b/config.mk
  FREETYPEINC = /usr/include/freetype2
 diff --color -u a/dwm.c b/dwm.c
 --- a/dwm.c	2022-10-04 18:38:18.000000000 +0100
-+++ b/dwm.c	2023-09-08 17:18:41.476647146 +0100
-@@ -160,14 +160,12 @@
++++ b/dwm.c	2023-09-11 13:14:42.004633570 +0100
+@@ -36,9 +36,6 @@
+ #include <X11/Xlib.h>
+ #include <X11/Xproto.h>
+ #include <X11/Xutil.h>
+-#ifdef XINERAMA
+-#include <X11/extensions/Xinerama.h>
+-#endif /* XINERAMA */
+ #include <X11/Xft/Xft.h>
+
+ #include "drw.h"
+@@ -160,7 +157,6 @@
  static void destroynotify(XEvent *e);
  static void detach(Client *c);
  static void detachstack(Client *c);
@@ -37,22 +47,7 @@ diff --color -u a/dwm.c b/dwm.c
  static void drawbar(Monitor *m);
  static void drawbars(void);
  static void enternotify(XEvent *e);
- static void expose(XEvent *e);
- static void focus(Client *c);
- static void focusin(XEvent *e);
--static void focusmon(const Arg *arg);
- static void focusstack(const Arg *arg);
- static Atom getatomprop(Client *c, Atom prop);
- static int getrootptr(int *x, int *y);
-@@ -208,7 +206,6 @@
- static void sigchld(int unused);
- static void spawn(const Arg *arg);
- static void tag(const Arg *arg);
--static void tagmon(const Arg *arg);
- static void tile(Monitor *m);
- static void togglebar(const Arg *arg);
- static void togglefloating(const Arg *arg);
-@@ -681,21 +678,6 @@
+@@ -681,21 +677,6 @@
  	}
  }
 
@@ -74,7 +69,7 @@ diff --color -u a/dwm.c b/dwm.c
  void
  drawbar(Monitor *m)
  {
-@@ -823,20 +805,6 @@
+@@ -823,20 +804,6 @@
  }
 
  void
@@ -95,7 +90,26 @@ diff --color -u a/dwm.c b/dwm.c
  focusstack(const Arg *arg)
  {
  	Client *c = NULL, *i;
-@@ -1659,14 +1627,6 @@
+@@ -975,18 +942,6 @@
+ 	arrange(selmon);
+ }
+
+-#ifdef XINERAMA
+-static int
+-isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info)
+-{
+-	while (n--)
+-		if (unique[n].x_org == info->x_org && unique[n].y_org == info->y_org
+-		&& unique[n].width == info->width && unique[n].height == info->height)
+-			return 0;
+-	return 1;
+-}
+-#endif /* XINERAMA */
+-
+ void
+ keypress(XEvent *e)
+ {
+@@ -1659,14 +1614,6 @@
  }
 
  void
@@ -110,3 +124,66 @@ diff --color -u a/dwm.c b/dwm.c
  tile(Monitor *m)
  {
  	unsigned int i, n, h, mw, my, ty;
+@@ -1851,62 +1798,6 @@
+ {
+ 	int dirty = 0;
+
+-#ifdef XINERAMA
+-	if (XineramaIsActive(dpy)) {
+-		int i, j, n, nn;
+-		Client *c;
+-		Monitor *m;
+-		XineramaScreenInfo *info = XineramaQueryScreens(dpy, &nn);
+-		XineramaScreenInfo *unique = NULL;
+-
+-		for (n = 0, m = mons; m; m = m->next, n++);
+-		/* only consider unique geometries as separate screens */
+-		unique = ecalloc(nn, sizeof(XineramaScreenInfo));
+-		for (i = 0, j = 0; i < nn; i++)
+-			if (isuniquegeom(unique, j, &info[i]))
+-				memcpy(&unique[j++], &info[i], sizeof(XineramaScreenInfo));
+-		XFree(info);
+-		nn = j;
+-
+-		/* new monitors if nn > n */
+-		for (i = n; i < nn; i++) {
+-			for (m = mons; m && m->next; m = m->next);
+-			if (m)
+-				m->next = createmon();
+-			else
+-				mons = createmon();
+-		}
+-		for (i = 0, m = mons; i < nn && m; m = m->next, i++)
+-			if (i >= n
+-			|| unique[i].x_org != m->mx || unique[i].y_org != m->my
+-			|| unique[i].width != m->mw || unique[i].height != m->mh)
+-			{
+-				dirty = 1;
+-				m->num = i;
+-				m->mx = m->wx = unique[i].x_org;
+-				m->my = m->wy = unique[i].y_org;
+-				m->mw = m->ww = unique[i].width;
+-				m->mh = m->wh = unique[i].height;
+-				updatebarpos(m);
+-			}
+-		/* removed monitors if n > nn */
+-		for (i = nn; i < n; i++) {
+-			for (m = mons; m && m->next; m = m->next);
+-			while ((c = m->clients)) {
+-				dirty = 1;
+-				m->clients = c->next;
+-				detachstack(c);
+-				c->mon = mons;
+-				attach(c);
+-				attachstack(c);
+-			}
+-			if (m == selmon)
+-				selmon = mons;
+-			cleanupmon(m);
+-		}
+-		free(unique);
+-	} else
+-#endif /* XINERAMA */
+ 	{ /* default monitor setup */
+ 		if (!mons)
+ 			mons = createmon();
